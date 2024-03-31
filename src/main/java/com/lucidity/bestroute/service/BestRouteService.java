@@ -1,46 +1,84 @@
 package src.main.java.com.lucidity.bestroute.service;
 
-import src.main.java.com.lucidity.bestroute.model.Customer;
-import src.main.java.com.lucidity.bestroute.model.DeliveryExecutive;
-import src.main.java.com.lucidity.bestroute.model.GeoLocation;
-import src.main.java.com.lucidity.bestroute.model.Restaurant;
+import src.main.java.com.lucidity.bestroute.model.*;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
-import static src.main.java.com.lucidity.bestroute.service.BestRouteHelper.findOptimalRoute;
 
 public class BestRouteService {
 
     public BestRouteService(){
+
+    }
+    private static final double AVG_SPEED_KMH = 20;
+
+    private double haversineDistance(double lat1, double lon1, double lat2, double lon2) {
+        final int earthRadius = 6371; // Radius of the Earth in kilometers
+        double phi1 = Math.toRadians(lat1);
+        double phi2 = Math.toRadians(lat2);
+        double deltaPhi = Math.toRadians(lat2 - lat1);
+        double deltaLambda = Math.toRadians(lon2 - lon1);
+
+        double a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+                Math.cos(phi1) * Math.cos(phi2) *
+                        Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return earthRadius * c;
     }
 
-    public void findBestRoute() {
-        // Defining geoLocations
-        GeoLocation customer1Location = new GeoLocation("locationCustomer1", 12.9284, 77.6229);
-        GeoLocation customer2Location = new GeoLocation("locationCustomer2", 12.9336, 77.6177);
-        GeoLocation restaurant1Location = new GeoLocation("locationRestaurant1", 12.9279, 77.6271);
-        GeoLocation restaurant2Location = new GeoLocation("locationRestaurant2", 12.9352, 77.6229);
+    private  double calculateTravelTime(double distanceKm) {
+        double timeHours = distanceKm / AVG_SPEED_KMH;
+        return timeHours * 60; // Convert hours to minutes
+    }
 
-        List<Customer> customers = new ArrayList<>();
-        customers.add(new Customer("Customer1", customer1Location));
-        customers.add(new Customer("Customer2", customer2Location));
+    private double calculateDeliveryTime(DeliveryExecutive executive, Restaurant restaurant, GeoLocation customerLocation) {
+        double travelDistance = haversineDistance(executive.getCurrentLocation().getLatitude(), executive.getCurrentLocation().getLongitude(),
+                restaurant.getLocation().getLatitude(), restaurant.getLocation().getLongitude());
+        double travelTime = calculateTravelTime(travelDistance);
+        double preparationTime = restaurant.getPreparationTime();
+        double deliveryDistance = haversineDistance(restaurant.getLocation().getLatitude(), restaurant.getLocation().getLongitude(),
+                customerLocation.getLatitude(), customerLocation.getLongitude());
+        double deliveryTime = calculateTravelTime(deliveryDistance);
+        return travelTime + preparationTime + deliveryTime;
+    }
 
-        Map<String, Restaurant> restaurants = new HashMap<>();
-        restaurants.put("Restaurant1", new Restaurant("Restaurant1", restaurant1Location, 10));
-        restaurants.put("Restaurant2", new Restaurant("Restaurant1", restaurant2Location, 12));
 
-        DeliveryExecutive aman = new DeliveryExecutive("Aman", new GeoLocation("Idle", 12.9295, 77.6309));
+    public List<Restaurant> findOptimalRoute(DeliveryExecutive executive, List<Restaurant> restaurants, List<Customer> customers) {
+        List<Restaurant> optimalRoute = new ArrayList<>();
+        double minTotalDeliveryTime = Double.MAX_VALUE;
 
-        List<Restaurant> optimalRoute = findOptimalRoute(aman, new ArrayList<>(restaurants.values()), customers);
+        for (Restaurant startRestaurant : restaurants) {
+            List<Restaurant> currentRoute = new ArrayList<>();
+            currentRoute.add(startRestaurant);
+            double totalDeliveryTime = 0;
 
-        System.out.println("Optimal route for Aman:");
-        for (Restaurant restaurant : optimalRoute) {
-            System.out.println("Deliver to " + restaurant.getName() + " (Preparation Time: " + restaurant.getPreparationTime() + " minutes)");
+            for (Customer customer : customers) {
+                double minDeliveryTime = Double.MAX_VALUE;
+                Restaurant nextRestaurant = null;
+
+                for (Restaurant restaurant : restaurants) {
+                    if (!currentRoute.contains(restaurant)) {
+                        double deliveryTime = calculateDeliveryTime(executive, restaurant, customer.getLocation());
+                        if (deliveryTime < minDeliveryTime) {
+                            minDeliveryTime = deliveryTime;
+                            nextRestaurant = restaurant;
+                        }
+                    }
+                }
+
+                if (nextRestaurant != null) {
+                    currentRoute.add(nextRestaurant);
+                    totalDeliveryTime += minDeliveryTime;
+                }
+            }
+
+            if (totalDeliveryTime < minTotalDeliveryTime) {
+                minTotalDeliveryTime = totalDeliveryTime;
+                optimalRoute = currentRoute;
+            }
         }
+
+        return optimalRoute;
     }
-
 }
-
