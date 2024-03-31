@@ -1,4 +1,4 @@
-package src.main.java.com.lucidity.bestroute.model;
+package src.main.java.com.example.bestroute.model;
 
 public class Restaurant {
     private final String name;

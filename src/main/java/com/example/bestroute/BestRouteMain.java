@@ -1,6 +1,6 @@
-package src.main.java.com.lucidity.bestroute;
+package src.main.java.com.example.bestroute;
 
-import src.main.java.com.lucidity.bestroute.controller.BestRouteController;
+import src.main.java.com.example.bestroute.controller.BestRouteController;
 
 public class BestRouteMain {
 

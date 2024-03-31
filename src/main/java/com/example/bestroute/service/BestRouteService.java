@@ -1,6 +1,9 @@
-package src.main.java.com.lucidity.bestroute.service;
+package src.main.java.com.example.bestroute.service;
 
-import src.main.java.com.lucidity.bestroute.model.*;
+import src.main.java.com.example.bestroute.model.Customer;
+import src.main.java.com.example.bestroute.model.DeliveryExecutive;
+import src.main.java.com.example.bestroute.model.GeoLocation;
+import src.main.java.com.example.bestroute.model.Restaurant;
 
 import java.util.ArrayList;
 import java.util.List;
